@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
@@ -10,16 +9,21 @@ import (
 )
 
 // Connect establece la conexión con PostgreSQL
+// En Lambda usa DATABASE_URL, localmente usa variables individuales
 func Connect() *sql.DB {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		getEnv("DB_HOST", "localhost"),
-		getEnv("DB_PORT", "5432"),
-		getEnv("DB_USER", "postgres"),
-		getEnv("DB_PASSWORD", "postgres"),
-		getEnv("DB_NAME", "paralelo_db"),
-		getEnv("DB_SSLMODE", "disable"),
-	)
+	dsn := os.Getenv("DATABASE_URL")
+
+	// Si no hay DATABASE_URL, construir DSN desde variables individuales (desarrollo local)
+	if dsn == "" {
+		host     := getEnv("DB_HOST", "localhost")
+		port     := getEnv("DB_PORT", "5432")
+		user     := getEnv("DB_USER", "postgres")
+		password := getEnv("DB_PASSWORD", "postgres")
+		dbname   := getEnv("DB_NAME", "paralelo_db")
+		sslmode  := getEnv("DB_SSLMODE", "disable")
+		dsn = "host=" + host + " port=" + port + " user=" + user +
+			" password=" + password + " dbname=" + dbname + " sslmode=" + sslmode
+	}
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
