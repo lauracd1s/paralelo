@@ -5,48 +5,54 @@ import (
 	"os"
 
 	"paralelo/internal/adapters/primary/http/handlers"
+	"paralelo/internal/adapters/primary/http/middleware"
 	"paralelo/internal/adapters/primary/http/router"
 	"paralelo/internal/adapters/secondary/postgres/repositories"
 	"paralelo/internal/core/services"
 	"paralelo/internal/infrastructure/database"
 
 	"github.com/joho/godotenv"
+
+	// Adaptador Lambda — solo activo cuando se compila con la tag lambda
+	"context"
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
+	"github.com/gin-gonic/gin"
 )
 
-func main() {
-	// Cargar variables de entorno desde .env
-	if err := godotenv.Load(); err != nil {
-		log.Println("⚠️  Archivo .env no encontrado, usando variables del sistema")
-	}
-
-	// 1. Conectar a la base de datos (infraestructura)
+func buildRouter() *gin.Engine {
 	db := database.Connect()
-	defer db.Close()
-
-	// 2. Ejecutar migraciones
 	database.Migrate(db)
 
-	// 3. Inyección de dependencias (Arquitectura Hexagonal)
-	//    Secundario: repositorio PostgreSQL (adaptador)
-	userRepo := repositories.NewPostgresUserRepository(db)
-
-	//    Core: servicio con la lógica de negocio
+	userRepo    := repositories.NewPostgresUserRepository(db)
 	userService := services.NewUserService(userRepo)
-
-	//    Primario: handler HTTP (adaptador)
 	userHandler := handlers.NewUserHandler(userService)
 
-	// 4. Configurar rutas
-	r := router.SetupRouter(userHandler)
+	return router.SetupRouter(userHandler)
+}
 
-	// 5. Arrancar el servidor
+func main() {
+	godotenv.Load()
+
+	// Si hay variable AWS_LAMBDA_FUNCTION_NAME, estamos en Lambda
+	if os.Getenv("AWS_LAMBDA_FUNCTION_NAME") != "" {
+		log.Println("Corriendo en modo Lambda")
+		r := buildRouter()
+		ginLambda := ginadapter.New(r)
+
+		lambda.Start(func(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+			return ginLambda.ProxyWithContext(ctx, req)
+		})
+		return
+	}
+
+	// Modo local normal
+	r := buildRouter()
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-
 	log.Printf("🚀 Servidor corriendo en http://localhost:%s", port)
-	if err := r.Run(":" + port); err != nil {
-		log.Fatalf("Error al iniciar el servidor: %v", err)
-	}
+	r.Run(":" + port)
 }
