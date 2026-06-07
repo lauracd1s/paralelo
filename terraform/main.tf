@@ -80,7 +80,7 @@ resource "aws_lambda_function" "api" {
   function_name = "${var.project_name}-api"
   role          = aws_iam_role.lambda_role.arn
   handler       = "bootstrap"
-  runtime       = "provided.al2"   # Go binario compilado
+  runtime       = "provided.al2"
   filename      = var.lambda_zip_path
   timeout       = 30
   memory_size   = 256
@@ -89,11 +89,11 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      DATABASE_URL = var.database_url
-      JWT_SECRET   = var.jwt_secret
-      S3_BUCKET    = aws_s3_bucket.uploads.bucket
+      DATABASE_URL  = var.database_url
+      JWT_SECRET    = var.jwt_secret
+      S3_BUCKET     = aws_s3_bucket.uploads.bucket
       AWS_S3_REGION = var.aws_region
-      GIN_MODE     = "release"
+      GIN_MODE      = "release"
     }
   }
 
@@ -135,9 +135,7 @@ resource "aws_apigatewayv2_stage" "prod" {
   name        = "$default"
   auto_deploy = true
 
-  access_log_settings {
-    destination_arn = aws_cloudwatch_log_group.lambda_logs.arn
-  }
+  # access_log_settings removido — format era requerido y no es necesario para el proyecto
 }
 
 resource "aws_lambda_permission" "apigw" {
