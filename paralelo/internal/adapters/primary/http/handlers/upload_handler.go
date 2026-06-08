@@ -7,11 +7,12 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
 )
 
-// Upload godoc
-// POST /api/upload
 func Upload(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -19,27 +20,69 @@ func Upload(c *gin.Context) {
 		return
 	}
 
-	// Crear carpeta uploads si no existe
-	uploadDir := "./uploads"
-	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al crear directorio"})
+	// Nombre único
+	ext := filepath.Ext(file.Filename)
+	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+
+	// Abrir el archivo
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al leer el archivo"})
+		return
+	}
+	defer src.Close()
+
+	bucket := os.Getenv("S3_BUCKET")
+
+	// Si hay bucket S3 configurado, subir a S3
+	if bucket != "" {
+		region := os.Getenv("AWS_S3_REGION")
+		if region == "" {
+			region = "us-east-1"
+		}
+
+		sess, err := session.NewSession(&aws.Config{
+			Region: aws.String(region),
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al conectar con S3"})
+			return
+		}
+
+		svc := s3.New(sess)
+		_, err = svc.PutObject(&s3.PutObjectInput{
+			Bucket:      aws.String(bucket),
+			Key:         aws.String("uploads/" + filename),
+			Body:        src,
+			ContentType: aws.String(file.Header.Get("Content-Type")),
+			ACL:         aws.String("public-read"),
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al subir a S3: " + err.Error()})
+			return
+		}
+
+		fileURL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/uploads/%s", bucket, region, filename)
+		c.JSON(http.StatusOK, gin.H{
+			"message":  "Archivo subido exitosamente a S3",
+			"filename": filename,
+			"url":      fileURL,
+			"size":     file.Size,
+		})
 		return
 	}
 
-	// Nombre único para el archivo
-	ext := filepath.Ext(file.Filename)
-	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	// Modo local — guardar en /tmp
+	uploadDir := "/tmp/uploads"
+	os.MkdirAll(uploadDir, os.ModePerm)
 	savePath := filepath.Join(uploadDir, filename)
-
 	if err := c.SaveUploadedFile(file, savePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar el archivo"})
 		return
 	}
 
-	// URL pública del archivo
 	host := c.Request.Host
 	fileURL := fmt.Sprintf("http://%s/uploads/%s", host, filename)
-
 	c.JSON(http.StatusOK, gin.H{
 		"message":  "Archivo subido exitosamente",
 		"filename": filename,
