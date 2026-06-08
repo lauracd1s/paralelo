@@ -20,11 +20,9 @@ func Upload(c *gin.Context) {
 		return
 	}
 
-	// Nombre único
 	ext := filepath.Ext(file.Filename)
 	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 
-	// Abrir el archivo
 	src, err := file.Open()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al leer el archivo"})
@@ -34,7 +32,6 @@ func Upload(c *gin.Context) {
 
 	bucket := os.Getenv("S3_BUCKET")
 
-	// Si hay bucket S3 configurado, subir a S3
 	if bucket != "" {
 		region := os.Getenv("AWS_S3_REGION")
 		if region == "" {
@@ -55,7 +52,7 @@ func Upload(c *gin.Context) {
 			Key:         aws.String("uploads/" + filename),
 			Body:        src,
 			ContentType: aws.String(file.Header.Get("Content-Type")),
-			ACL:         aws.String("public-read"),
+			// Sin ACL — bucket usa Object Ownership por defecto
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al subir a S3: " + err.Error()})
@@ -72,7 +69,7 @@ func Upload(c *gin.Context) {
 		return
 	}
 
-	// Modo local — guardar en /tmp
+	// Modo local
 	uploadDir := "/tmp/uploads"
 	os.MkdirAll(uploadDir, os.ModePerm)
 	savePath := filepath.Join(uploadDir, filename)
