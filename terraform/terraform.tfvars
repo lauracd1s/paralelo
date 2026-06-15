@@ -1,7 +1,6 @@
-# Valores no sensibles — los secretos van en GitHub Secrets
 aws_region   = "us-east-1"
 project_name = "paralelo"
 environment  = "prod"
 
-# jwt_secret   y database_url se inyectan desde GitHub Actions
+# jwt_secret, database_url y ses_sender_email van en GitHub Secrets
 # NO pongas credenciales reales aquí

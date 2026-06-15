@@ -10,7 +10,6 @@ import (
 func SetupRouter(userHandler *handlers.UserHandler) *gin.Engine {
 	r := gin.Default()
 
-	// Servir archivos estáticos subidos
 	r.Static("/uploads", "./uploads")
 
 	api := r.Group("/api")
@@ -22,7 +21,7 @@ func SetupRouter(userHandler *handlers.UserHandler) *gin.Engine {
 		auth.POST("/login", userHandler.Login)
 	}
 
-	// Rutas protegidas
+	// Rutas protegidas — CRUD usuarios
 	usuarios := api.Group("/usuarios")
 	usuarios.Use(middleware.AuthMiddleware())
 	{
@@ -32,8 +31,11 @@ func SetupRouter(userHandler *handlers.UserHandler) *gin.Engine {
 		usuarios.DELETE("/:id", userHandler.Delete)
 	}
 
-	// Upload de archivos (protegido)
+	// Upload de archivos
 	api.POST("/upload", middleware.AuthMiddleware(), handlers.Upload)
+
+	// Notificaciones SNS
+	api.POST("/notifications/send", middleware.AuthMiddleware(), handlers.SendNotification)
 
 	return r
 }

@@ -11,7 +11,7 @@ variable "project_name" {
 }
 
 variable "environment" {
-  description = "Ambiente (prod, dev)"
+  description = "Ambiente"
   type        = string
   default     = "prod"
 }
@@ -29,7 +29,18 @@ variable "database_url" {
 }
 
 variable "lambda_zip_path" {
-  description = "Ruta al ZIP del binario de la Lambda"
+  description = "Ruta al ZIP del binario de la Lambda principal"
   type        = string
   default     = "../lambda/function.zip"
+}
+
+variable "notification_lambda_zip_path" {
+  description = "Ruta al ZIP de la Lambda de notificaciones"
+  type        = string
+  default     = "../lambda/notification.zip"
+}
+
+variable "ses_sender_email" {
+  description = "Email verificado en AWS SES para enviar correos"
+  type        = string
 }
