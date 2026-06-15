@@ -1,0 +1,15 @@
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+tfplan
+
+# Go
+bootstrap
+function.zip
+notification.zip
+
+# Flutter
+paralelo_app/.dart_tool/
+paralelo_app/build/
