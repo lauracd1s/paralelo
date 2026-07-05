@@ -5,6 +5,7 @@ import 'package:paralelo_app/features/auth/views/login_view.dart';
 import 'package:paralelo_app/features/usuarios/models/usuario_model.dart';
 import 'package:paralelo_app/features/usuarios/viewmodels/usuarios_viewmodel.dart';
 import 'package:paralelo_app/features/upload/views/upload_view.dart';
+import 'package:paralelo_app/features/notifications/views/notification_view.dart';
 
 class UsuariosView extends StatefulWidget {
   const UsuariosView({super.key});
@@ -37,6 +38,14 @@ class _UsuariosViewState extends State<UsuariosView> {
             onPressed: () => vm.cargarUsuarios()),
           IconButton(icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _logout),
+          IconButton(
+          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+          tooltip: 'Enviar notificación',
+          onPressed: () => Navigator.push(
+            context, 
+            MaterialPageRoute(builder: (_) => const NotificationView())
+          ),
+        ),
         ],
       ),
       body: vm.loading

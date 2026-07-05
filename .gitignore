@@ -13,3 +13,5 @@ notification.zip
 # Flutter
 paralelo_app/.dart_tool/
 paralelo_app/build/
+
+load_testing/resultados/
