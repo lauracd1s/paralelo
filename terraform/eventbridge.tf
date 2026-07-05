@@ -52,7 +52,7 @@ resource "aws_scheduler_schedule" "every_5_minutes" {
 
     # Mensaje que se publica en SNS cada 5 minutos
     input = jsonencode({
-      email   = "lauras@utesa.edu"
+      email   = "lauralorads868@gmail.com"
       subject = "Reporte Automático — EventBridge Scheduler"
       message = "Este mensaje fue generado automáticamente por EventBridge Scheduler cada 5 minutos. Sistema Paralelo API — UTESA funcionando correctamente."
     })
