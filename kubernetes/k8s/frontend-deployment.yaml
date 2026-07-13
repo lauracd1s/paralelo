@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paralelo-frontend
+  labels:
+    app: paralelo-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paralelo-frontend
+  template:
+    metadata:
+      labels:
+        app: paralelo-frontend
+    spec:
+      containers:
+        - name: paralelo-frontend
+          image: laurista/paralelo-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: paralelo-frontend-svc
+spec:
+  selector:
+    app: paralelo-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30081
+  type: NodePort

@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paralelo-backend
+  labels:
+    app: paralelo-backend
+spec:
+  replicas: 2          # ← empieza con 2 réplicas
+  selector:
+    matchLabels:
+      app: paralelo-backend
+  template:
+    metadata:
+      labels:
+        app: paralelo-backend
+    spec:
+      containers:
+        - name: paralelo-backend
+          image: laurista/paralelo-backend:latest   # imagen local de Docker
+          imagePullPolicy: Always           # usar imagen local, no Docker Hub
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: paralelo-secrets
+                  key: database-url
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: paralelo-secrets
+                  key: jwt-secret
+            - name: SNS_TOPIC_ARN
+              valueFrom:
+                secretKeyRef:
+                  name: paralelo-secrets
+                  key: sns-topic-arn
+            - name: S3_BUCKET
+              value: "paralelo-uploads-prod"
+            - name: AWS_SES_REGION
+              value: "us-east-1"
+            - name: GIN_MODE
+              value: "release"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /api/auth/login
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: paralelo-backend-svc
+spec:
+  selector:
+    app: paralelo-backend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30080
+  type: NodePort
